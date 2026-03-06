@@ -1,10 +1,7 @@
 name: ci_linux
 
 on:
-  pull_request:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
