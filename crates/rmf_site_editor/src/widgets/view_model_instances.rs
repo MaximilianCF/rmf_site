@@ -37,7 +37,7 @@ pub struct ViewModelInstancesPlugin {}
 
 impl Plugin for ViewModelInstancesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(PropertiesTilePlugin::<ViewModelInstances>::new());
+        app.add_plugins(PropertiesTilePlugin::<ViewModelInstances>::new().tab("Site"));
     }
 }
 

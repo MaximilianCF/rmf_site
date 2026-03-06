@@ -26,7 +26,7 @@ use crate::{
 };
 use bevy::{ecs::system::SystemParam, prelude::*};
 use bevy_egui::egui::{Button, CollapsingHeader, TextEdit, Ui, Widget};
-use rmf_site_egui::{PropertiesTilePlugin, Tile, WidgetSystem};
+use rmf_site_egui::{PanelTab, PropertiesTilePlugin, Tile, WidgetSystem};
 use std::any::TypeId;
 
 /// Add a widget for viewing different kinds of groups.
@@ -36,7 +36,7 @@ pub struct ViewGroupsPlugin {}
 impl Plugin for ViewGroupsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GroupViewModes>()
-            .add_plugins(PropertiesTilePlugin::<ViewGroups>::new());
+            .add_plugins(PropertiesTilePlugin::<ViewGroups>::new().tab("Tasks"));
     }
 }
 

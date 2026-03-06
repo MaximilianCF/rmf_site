@@ -25,6 +25,7 @@ where
     W: WidgetSystem<Tile> + 'static + Send + Sync,
 {
     _ignore: std::marker::PhantomData<W>,
+    tab: Option<String>,
 }
 
 impl<W> PropertiesTilePlugin<W>
@@ -34,7 +35,13 @@ where
     pub fn new() -> Self {
         Self {
             _ignore: Default::default(),
+            tab: None,
         }
+    }
+
+    pub fn tab(mut self, tab: impl Into<String>) -> Self {
+        self.tab = Some(tab.into());
+        self
     }
 }
 
@@ -45,9 +52,11 @@ where
     fn build(&self, app: &mut App) {
         let widget = Widget::<Tile>::new::<W>(app.world_mut());
         let properties_panel = app.world().resource::<PropertiesPanel>().id;
-        app.world_mut()
-            .spawn(widget)
-            .insert(ChildOf(properties_panel));
+        let mut entity = app.world_mut().spawn(widget);
+        entity.insert(ChildOf(properties_panel));
+        if let Some(tab) = &self.tab {
+            entity.insert(PanelTab(tab.clone()));
+        }
     }
 }
 
@@ -95,5 +104,6 @@ impl Plugin for PropertiesPanelPlugin {
             side: self.side,
             id,
         });
+        app.init_resource::<ActivePanelTab>();
     }
 }

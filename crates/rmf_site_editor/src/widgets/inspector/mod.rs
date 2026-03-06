@@ -315,7 +315,11 @@ impl FromWorld for MainInspector {
     fn from_world(world: &mut World) -> Self {
         let widget = Widget::new::<Inspector>(world);
         let properties_panel = world.resource::<PropertiesPanel>().id();
-        let id = world.spawn(widget).insert(ChildOf(properties_panel)).id();
+        let id = world
+            .spawn(widget)
+            .insert(ChildOf(properties_panel))
+            .insert(PanelTab("Inspect".to_string()))
+            .id();
         Self { id }
     }
 }
@@ -342,61 +346,59 @@ impl<'w, 's> WidgetSystem<Tile> for Inspector<'w, 's> {
         }
         */
 
-        CollapsingHeader::new("Inspect")
-            .default_open(true)
-            .show(ui, |ui| {
-                let Some(selection) = world.get_resource::<Selection>() else {
-                    ui.label("ERROR: Selection resource is not available");
-                    return;
+        let Some(selection) = world.get_resource::<Selection>() else {
+            ui.label("ERROR: Selection resource is not available");
+            return;
+        };
+
+        let Some(mut selection) = selection.0 else {
+            ui.add_space(8.0);
+            ui.label("Select an element to inspect its properties");
+            return;
+        };
+
+        let inspect_for_query = state.get_mut(world).inspect_for_query;
+
+        if let Ok(inspect_for) = inspect_for_query.get(selection) {
+            selection = inspect_for.entity;
+        }
+
+        let params = state.get(world);
+
+        let (label, site_id) = if let Ok((category, site_id)) = params.heading.get(selection) {
+            (
+                category.map(|x| x.label()).unwrap_or("<Unknown Type>"),
+                site_id,
+            )
+        } else {
+            ("<Unknown Type>", None)
+        };
+
+        if let Some(site_id) = site_id {
+            ui.heading(format!("{} #{}", label, site_id.0));
+        } else {
+            ui.heading(format!("{} (unsaved)", label));
+        }
+
+        ui.separator();
+
+        let children: Result<SmallVec<[_; 16]>, _> = params
+            .children
+            .get(id)
+            .map(|children| children.iter().collect());
+        let Ok(children) = children else {
+            return;
+        };
+
+        panel.align(ui, |ui| {
+            for child in children {
+                let inspect = Inspect {
+                    selection,
+                    inspection: child,
+                    panel,
                 };
-
-                let Some(mut selection) = selection.0 else {
-                    ui.label("Nothing selected");
-                    return;
-                };
-
-                let inspect_for_query = state.get_mut(world).inspect_for_query;
-
-                if let Ok(inspect_for) = inspect_for_query.get(selection) {
-                    selection = inspect_for.entity;
-                }
-
-                let params = state.get(world);
-
-                let (label, site_id) =
-                    if let Ok((category, site_id)) = params.heading.get(selection) {
-                        (
-                            category.map(|x| x.label()).unwrap_or("<Unknown Type>"),
-                            site_id,
-                        )
-                    } else {
-                        ("<Unknown Type>", None)
-                    };
-
-                if let Some(site_id) = site_id {
-                    ui.heading(format!("{} #{}", label, site_id.0));
-                } else {
-                    ui.heading(format!("{} (unsaved)", label));
-                }
-
-                let children: Result<SmallVec<[_; 16]>, _> = params
-                    .children
-                    .get(id)
-                    .map(|children| children.iter().collect());
-                let Ok(children) = children else {
-                    return;
-                };
-
-                panel.align(ui, |ui| {
-                    for child in children {
-                        let inspect = Inspect {
-                            selection,
-                            inspection: child,
-                            panel,
-                        };
-                        let _ = world.try_show_in(child, inspect, ui);
-                    }
-                });
-            });
+                let _ = world.try_show_in(child, inspect, ui);
+            }
+        });
     }
 }

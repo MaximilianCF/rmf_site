@@ -89,7 +89,11 @@ impl FromWorld for TaskWidget {
     fn from_world(world: &mut World) -> Self {
         let widget = Widget::new::<ViewTasks>(world);
         let properties_panel = world.resource::<PropertiesPanel>().id();
-        let id = world.spawn(widget).insert(ChildOf(properties_panel)).id();
+        let id = world
+            .spawn(widget)
+            .insert(ChildOf(properties_panel))
+            .insert(PanelTab("Tasks".to_string()))
+            .id();
         Self { id }
     }
 }

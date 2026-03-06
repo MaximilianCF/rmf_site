@@ -27,7 +27,7 @@ use crate::{
 };
 use bevy::{ecs::system::SystemParam, prelude::*};
 use bevy_egui::egui::{Button, CollapsingHeader, DragValue, ScrollArea, Ui};
-use rmf_site_egui::{PropertiesTilePlugin, Tile, WidgetSystem};
+use rmf_site_egui::{PanelTab, PropertiesTilePlugin, Tile, WidgetSystem};
 use rmf_site_picking::Selection;
 
 /// Add a widget for viewing a list of layers
@@ -36,7 +36,7 @@ pub struct ViewLayersPlugin {}
 
 impl Plugin for ViewLayersPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(PropertiesTilePlugin::<ViewLayers>::new());
+        app.add_plugins(PropertiesTilePlugin::<ViewLayers>::new().tab("Nav"));
     }
 }
 
