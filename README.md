@@ -1,100 +1,106 @@
-[![style](https://github.com/open-rmf/rmf_site/actions/workflows/style.yaml/badge.svg)](https://github.com/open-rmf/rmf_site/actions/workflows/style.yaml)
-[![ci_linux](https://github.com/open-rmf/rmf_site/actions/workflows/ci_linux.yaml/badge.svg)](https://github.com/open-rmf/rmf_site/actions/workflows/ci_linux.yaml)
-[![ci_web](https://github.com/open-rmf/rmf_site/actions/workflows/ci_web.yaml/badge.svg)](https://github.com/open-rmf/rmf_site/actions/workflows/ci_web.yaml)
-[![ci_windows](https://github.com/open-rmf/rmf_site/actions/workflows/ci_windows.yaml/badge.svg)](https://github.com/open-rmf/rmf_site/actions/workflows/ci_windows.yaml)
+# RMF Site Editor (Desktop Fork)
 
-# The RMF Site Editor
+A desktop-focused fork of [open-rmf/rmf_site](https://github.com/open-rmf/rmf_site), the visual editor for designing and managing robot fleet management (RMF) sites.
 
-![Office world](media/office.png)
+Built in Rust with [Bevy](https://bevyengine.org/) and [egui](https://github.com/emilk/egui). Targets Linux as the primary platform, with .deb and AppImage packaging.
 
-The RMF Site Editor is an experimental approach to visualizing and editing large RMF deployment sites.
-It is built in Rust using [Bevy](https://bevyengine.org/), an open-source Rust-based game engine.
+## What this fork changes
 
-Rust and Bevy allow The RMF Site Editor to target both desktop (Windows/Linux/Mac) and web (WebAssembly+WebGL/WebGPU) using the same codebase:
- * Web build: the browser application provides maximum convenience, since there is nothing to build or install.
- * Desktop build: maximum performance, thanks to multithreading and lower-level GPU integration.
+Improvements over the upstream project:
 
-[Click here to use the web build in your browser](https://open-rmf.github.io/rmf_site/).
+- Save/export feedback: window title shows unsaved state, toast notifications on save/export, exit confirmation dialog
+- Edit menu with Undo/Redo/Delete and keyboard shortcuts
+- File menu with New/Open entries
+- Snap-to-grid with configurable presets (`G` to toggle, `Shift+G` to cycle grid size)
+- Status bar showing cursor world coordinates and snap state
+- Light export in SDF (point, spot, directional)
+- ROS 2 launch file auto-generation alongside SDF export
+- Desktop packaging: .deb (cargo-deb) and AppImage (linuxdeploy)
+- CI release workflow for automated builds on tagged versions
 
-# Project Integration
+## Download
 
-To use the Site Editor in an Open-RMF project to configure a simulation or deployment,
-follow the instructions at [`rmf_site_ros2`](https://github.com/open-rmf/rmf_site_ros2).
-There you will find `rmf_site_cmake` which you can use to generate simulations and
-navigation graphs from a Site Editor project, and `rmf_site_demos` which shows how to
-set up a cmake project to build and launch your sites.
+Pre-built packages are available on the [Releases](https://github.com/MaximilianCF/rmf_site/releases) page:
 
-# Helpful Links
+- `.deb` for Debian/Ubuntu-based distros
+- `.AppImage` portable binary for any Linux distro
 
- * [Bevy Engine](https://bevyengine.org/)
- * [Bevy Cheat Book](https://bevy-cheatbook.github.io/)
- * [Rust Book](https://doc.rust-lang.org/stable/book/)
+## Building from source
 
-# Install dependencies (Ubuntu 20.04)
+### Dependencies (Ubuntu/Debian)
 
-We need a newer Rust than what comes with Ubuntu 20.04.
-
-First make sure you don't have any distro-installed Rust stuff on your machine:
-```bash
-$ sudo apt remove rustc cargo
+```
+sudo apt install libgtk-3-dev libasound2-dev libudev-dev
 ```
 
-If you don't have it already, install `rustup` from the Rust website: https://www.rust-lang.org/tools/install
-```bash
-$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+Install Rust via [rustup](https://www.rust-lang.org/tools/install) if you don't have it:
+
 ```
-Just select the normal defaults (option 1).
-A bunch of stuff will happen. Be sure to close and re-open your terminal afterwards, so that it gets all the new stuff.
-
-Alternatively, if you already have a Rust installation managed by `rustup`, you can just do this to bring it up-to-date: `rustup update`
-
-Finally, we need some library packages:
-```bash
-$ sudo apt install libgtk-3-dev libasound2-dev libudev-dev
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-# Install dependencies (Windows 11)
+### Run
 
-Make sure you install rust from the main rust website. Cargo should take care of the rest of the magic for you.
-
-⚠️ Note: If you are building inside of a Windows Subsystem for Linux (WSL) environment, you should follow the Ubuntu instructions. We do not have build instructions for other choices of Linux distros inside of WSL.
-
-# Install extra dependencies for WebAssembly
-
-These are only needed if you're going to build a WebAssembly binary:
-```bash
-$ cargo install -f wasm-bindgen-cli --version 0.2.100
-$ cargo install basic-http-server
-$ rustup target add wasm32-unknown-unknown
-
-# binaryen version >= 110 required for a bug fix for wasm-opt
-# Refer to https://github.com/emilk/egui/pull/6848
-$ wget -P ~/ https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz
-$ tar xf ~/binaryen-version_123-x86_64-linux.tar.gz -C ~/
-$ export PATH=$PATH:~/binaryen-version_123/bin
+```
+cargo run
 ```
 
-# Build and Run (Desktop)
+Use `--features bevy/dynamic_linking` for faster compile times during development.
+Use `--release` for better runtime performance.
 
-Currently tested on Ubuntu 20.04.4 LTS and windows 11.
+### Build .deb package
 
-From the root directory:
-
-```bash
-$ cargo run
+```
+cargo install cargo-deb
+cargo deb -p rmf_site_editor
 ```
 
-Use the `--features bevy/dynamic_linking` flag to improve compile time through dynamic linking.
-Use the `--release` flag for better runtime performance.
+Output goes to `target/debian/`.
 
-# Build and Run (WebAssembly)
+### Build AppImage
 
-TODO: The web assembly version is highly experimental, currently it lacks important features like
-saving/loading of map files.
-
-```bash
-$ scripts/build-web.sh
-$ scripts/serve-web.sh
+```
+cargo build --release --bin rmf_site_editor
+bash packaging/build-appimage.sh
 ```
 
-Then use your favorite web browser to visit `http://localhost:1234`
+Requires [linuxdeploy](https://github.com/linuxdeploy/linuxdeploy). The script will download it automatically if not found.
+
+## Keyboard shortcuts
+
+| Key | Action |
+|-----|--------|
+| Ctrl+N | New workspace |
+| Ctrl+O | Open file |
+| Ctrl+S | Save |
+| Ctrl+Shift+S | Save As |
+| Ctrl+E | Export SDF |
+| Ctrl+Z | Undo |
+| Ctrl+Shift+Z | Redo |
+| Delete | Delete selected |
+| G | Toggle snap-to-grid |
+| Shift+G | Cycle grid size |
+
+## Project structure
+
+Rust workspace with crates under `crates/`:
+
+- `rmf_site_editor` -- main application binary and editor logic
+- `rmf_site_format` -- site data model, serialization, SDF export
+- `rmf_site_egui` -- egui-based menu bar and UI widgets
+- `rmf_site_camera` -- 3D camera controls
+- `rmf_site_picking` -- mouse picking / selection
+- `rmf_site_mesh` -- mesh generation for walls, floors, doors
+- `rmf_site_animate` -- animation utilities
+
+## ROS 2 integration
+
+To use exported sites in an Open-RMF project, see [`rmf_site_ros2`](https://github.com/open-rmf/rmf_site_ros2). The SDF export now includes a `launch.py` file that can be used directly with `ros2 launch`.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).
+
+## Upstream
+
+This is a fork of [open-rmf/rmf_site](https://github.com/open-rmf/rmf_site). Original work by Open Source Robotics Foundation contributors.
