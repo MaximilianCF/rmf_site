@@ -34,6 +34,10 @@ impl SdfExportMenu {
 impl FromWorld for SdfExportMenu {
     fn from_world(world: &mut World) -> Self {
         let file_header = world.resource::<FileMenu>().get();
+
+        // Separator before export items
+        world.spawn((MenuItem::Separator, ChildOf(file_header)));
+
         let export_sdf = world
             .spawn((
                 MenuItem::Text(TextMenuItem::new("Export Sdf").shortcut("Ctrl-E")),

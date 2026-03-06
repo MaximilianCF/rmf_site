@@ -16,7 +16,7 @@
 */
 
 use crate::widgets::{FileMenu, MenuDisabled, MenuEvent, MenuItem, TextMenuItem};
-use crate::{AppState, WorkspaceSaver};
+use crate::{AppState, CreateNewWorkspace, WorkspaceLoader, WorkspaceSaver};
 use bevy::{ecs::hierarchy::ChildOf, prelude::*};
 
 #[derive(Default)]
@@ -33,6 +33,8 @@ impl Plugin for WorkspaceMenuPlugin {
 
 #[derive(Resource)]
 pub struct WorkspaceMenu {
+    new: Entity,
+    open: Entity,
     save: Entity,
     save_as: Entity,
 }
@@ -40,23 +42,49 @@ pub struct WorkspaceMenu {
 impl FromWorld for WorkspaceMenu {
     fn from_world(world: &mut World) -> Self {
         let file_menu = world.resource::<FileMenu>().get();
-        let save = world
-            .spawn(MenuItem::Text(TextMenuItem::new("Save").shortcut("Ctrl-S")))
-            .insert(ChildOf(file_menu))
-            .id();
-        let save_as = world
-            .spawn(MenuItem::Text(
-                TextMenuItem::new("Save As").shortcut("Ctrl-Shift-S"),
+
+        let new = world
+            .spawn((
+                MenuItem::Text(TextMenuItem::new("New").shortcut("Ctrl-N")),
+                ChildOf(file_menu),
             ))
-            .insert(ChildOf(file_menu))
+            .id();
+        let open = world
+            .spawn((
+                MenuItem::Text(TextMenuItem::new("Open").shortcut("Ctrl-O")),
+                ChildOf(file_menu),
+            ))
             .id();
 
-        // Saving is not enabled in wasm
+        // Separator between open/save
+        world.spawn((MenuItem::Separator, ChildOf(file_menu)));
+
+        let save = world
+            .spawn((
+                MenuItem::Text(TextMenuItem::new("Save").shortcut("Ctrl-S")),
+                ChildOf(file_menu),
+            ))
+            .id();
+        let save_as = world
+            .spawn((
+                MenuItem::Text(TextMenuItem::new("Save As").shortcut("Ctrl-Shift-S")),
+                ChildOf(file_menu),
+            ))
+            .id();
+
+        // Saving/opening is not enabled in wasm
         if cfg!(target_arch = "wasm32") {
+            world.entity_mut(new).insert(MenuDisabled);
+            world.entity_mut(open).insert(MenuDisabled);
             world.entity_mut(save).insert(MenuDisabled);
             world.entity_mut(save_as).insert(MenuDisabled);
         }
-        Self { save, save_as }
+        Self {
+            new,
+            open,
+            save,
+            save_as,
+        }
     }
 }
 
@@ -64,11 +92,21 @@ fn handle_workspace_menu_events(
     mut menu_events: EventReader<MenuEvent>,
     workspace_menu: Res<WorkspaceMenu>,
     mut workspace_saver: WorkspaceSaver,
+    mut workspace_loader: WorkspaceLoader,
+    mut new_workspace: EventWriter<CreateNewWorkspace>,
 ) {
     for event in menu_events.read() {
-        if event.clicked() && event.source() == workspace_menu.save {
+        if !event.clicked() {
+            continue;
+        }
+        let source = event.source();
+        if source == workspace_menu.new {
+            new_workspace.write(CreateNewWorkspace);
+        } else if source == workspace_menu.open {
+            workspace_loader.load_from_dialog();
+        } else if source == workspace_menu.save {
             workspace_saver.save_to_default_file();
-        } else if event.clicked() && event.source() == workspace_menu.save_as {
+        } else if source == workspace_menu.save_as {
             workspace_saver.save_to_dialog();
         }
     }

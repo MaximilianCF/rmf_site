@@ -10,6 +10,23 @@ use bevy_math::Affine3A;
 use bevy_mod_outline::ATTRIBUTE_OUTLINE_NORMAL;
 use bevy_reflect::prelude::*;
 use bevy_render::mesh::{Indices, PrimitiveTopology, VertexAttributeValues};
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum MeshError {
+    #[error("Inconsistent positions ({positions}) vs normals ({normals})")]
+    PositionNormalMismatch { positions: usize, normals: usize },
+    #[error("Inconsistent positions ({positions}) vs uv ({uv})")]
+    PositionUvMismatch { positions: usize, uv: usize },
+    #[error("Unsupported primitive topology: {0:?}")]
+    UnsupportedTopology(PrimitiveTopology),
+    #[error("Mesh is missing normals attribute when it has positions attribute")]
+    MissingNormals,
+    #[error("Unsupported position attribute type while merging mesh")]
+    UnsupportedPositionType,
+    #[error("Mesh needs UV values but the buffer does not have any")]
+    MissingUvValues,
+}
 
 pub mod faces;
 pub use faces::*;
@@ -143,23 +160,26 @@ impl From<MeshBuffer> for Mesh {
 }
 
 impl MeshBuffer {
-    pub fn new(positions: Vec<[f32; 3]>, normals: Vec<[f32; 3]>, indices: Vec<u32>) -> Self {
+    pub fn new(
+        positions: Vec<[f32; 3]>,
+        normals: Vec<[f32; 3]>,
+        indices: Vec<u32>,
+    ) -> Result<Self, MeshError> {
         if positions.len() != normals.len() {
-            panic!(
-                "Inconsistent positions {} vs normals {}",
-                positions.len(),
-                normals.len(),
-            );
+            return Err(MeshError::PositionNormalMismatch {
+                positions: positions.len(),
+                normals: normals.len(),
+            });
         }
 
-        Self {
+        Ok(Self {
             positions,
             normals,
             indices,
             outline: Vec::new(),
             uv: None,
             copy_outline_normals: false,
-        }
+        })
     }
 
     pub fn empty() -> Self {
@@ -176,16 +196,15 @@ impl MeshBuffer {
         self
     }
 
-    pub fn with_uv(mut self, uv: Vec<[f32; 2]>) -> Self {
+    pub fn with_uv(mut self, uv: Vec<[f32; 2]>) -> Result<Self, MeshError> {
         if uv.len() != self.positions.len() {
-            panic!(
-                "Inconsistent positions {} vs uv {}",
-                self.positions.len(),
-                uv.len()
-            );
+            return Err(MeshError::PositionUvMismatch {
+                positions: self.positions.len(),
+                uv: uv.len(),
+            });
         }
         self.uv = Some(uv);
-        self
+        Ok(self)
     }
 
     pub fn scale_uv(mut self, x_scale: f32, y_scale: f32) -> Self {
@@ -272,7 +291,7 @@ impl MeshBuffer {
         self
     }
 
-    pub fn merge_into(self, mesh: &mut Mesh) {
+    pub fn merge_into(self, mesh: &mut Mesh) -> Result<(), MeshError> {
         let offset = mesh.attribute(Mesh::ATTRIBUTE_POSITION).map(|a| a.len());
         if let Some(offset) = offset {
             match mesh.primitive_topology() {
@@ -301,10 +320,7 @@ impl MeshBuffer {
                     }
                 }
                 other => {
-                    panic!(
-                        "Unsupported primitive topology while merging mesh: {:?}",
-                        other
-                    );
+                    return Err(MeshError::UnsupportedTopology(other));
                 }
             }
 
@@ -338,10 +354,10 @@ impl MeshBuffer {
                 {
                     current_normals.extend(self.normals.into_iter());
                 } else {
-                    panic!("Mesh is missing normals attribute when it has positions attribute!");
+                    return Err(MeshError::MissingNormals);
                 }
             } else {
-                panic!("Unsupported position type while merging mesh");
+                return Err(MeshError::UnsupportedPositionType);
             }
 
             if let Some(VertexAttributeValues::Float32x2(current_uvs)) =
@@ -350,7 +366,7 @@ impl MeshBuffer {
                 if let Some(new_uvs) = self.uv {
                     current_uvs.extend(new_uvs);
                 } else {
-                    panic!("Mesh needs UV values but the buffer does not have any!");
+                    return Err(MeshError::MissingUvValues);
                 }
             }
         } else {
@@ -369,13 +385,11 @@ impl MeshBuffer {
                     mesh.insert_indices(Indices::U32(self.outline));
                 }
                 other => {
-                    panic!(
-                        "Unsupported primitive topology while merging mesh: {:?}",
-                        other
-                    );
+                    return Err(MeshError::UnsupportedTopology(other));
                 }
             }
         }
+        Ok(())
     }
 
     pub fn into_outline(self) -> Mesh {

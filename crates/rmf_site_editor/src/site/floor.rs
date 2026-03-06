@@ -185,7 +185,9 @@ fn make_floor_mesh(
         .collect();
 
     MeshBuffer::new(positions, normals, indices)
+        .expect("floor positions and normals should have equal length")
         .with_uv(uv)
+        .expect("floor UV count should match position count")
         .merge_with(outline_buffer)
         .into()
 }

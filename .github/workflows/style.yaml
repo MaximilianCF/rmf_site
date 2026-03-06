@@ -20,10 +20,13 @@ jobs:
 
     - name: rustfmt
       run: |
-        rustup component add rustfmt
+        rustup component add rustfmt clippy
 
     - name: style
       run: cargo fmt --check
+
+    - name: clippy
+      run: cargo clippy --workspace -- -D warnings
 
     - name: minimal feature build
       run: cd crates/rmf_site_format && cargo check --no-default-features

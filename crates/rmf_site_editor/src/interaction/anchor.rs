@@ -121,10 +121,13 @@ pub fn remove_interaction_for_subordinate_anchors(
 pub fn move_anchor(
     mut anchors: Query<&mut Anchor, Without<Subordinate>>,
     mut move_to: EventReader<MoveTo>,
+    snap: Res<SnapToGrid>,
 ) {
     for move_to in move_to.read() {
         if let Ok(mut anchor) = anchors.get_mut(move_to.entity) {
-            anchor.move_to(&move_to.transform);
+            let mut tf = move_to.transform;
+            tf.translation = snap.snap_xy(tf.translation);
+            anchor.move_to(&tf);
         }
     }
 }

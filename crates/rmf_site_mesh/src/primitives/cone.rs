@@ -41,5 +41,6 @@ pub fn make_cone(circle: OffsetCircle, peak: [f32; 3], resolution: u32) -> MeshB
         normals[(i + peak_start) as usize] = calculate_normal(mid_theta);
     }
 
-    return MeshBuffer::new(positions, normals, indices);
+    return MeshBuffer::new(positions, normals, indices)
+        .expect("cone positions and normals should have equal length");
 }

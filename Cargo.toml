@@ -40,7 +40,6 @@ glam = { version = "0.29" } # Ensure that this match's bevy_math's glam before u
 uuid = { version = "1.13"}
 sdformat = "0.1"
 urdf-rs = { version = "0.7.3"}
-once_cell = "1"
 pathdiff = "0.2"
 bevy_mod_outline = "0.10.1"
 bevy_gltf_export = "0.1.1"

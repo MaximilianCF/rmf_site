@@ -76,3 +76,16 @@ web-time = {workspace = true}
 [dev-dependencies]
 file_diff = {workspace = true}
 testdir = {workspace = true}
+
+[package.metadata.deb]
+maintainer = "RMF Site Editor Contributors"
+copyright = "2022-2026, Open Source Robotics Foundation"
+extended-description = "A visual editor for designing and managing robot fleet management (RMF) sites. Supports export to Gazebo SDF, navigation graphs, and ROS 2 launch files."
+section = "science"
+priority = "optional"
+depends = "$auto, libasound2, libudev1, libgtk-3-0"
+assets = [
+    ["target/release/rmf_site_editor", "usr/bin/", "755"],
+    ["../../packaging/rmf-site-editor.desktop", "usr/share/applications/", "644"],
+    ["../../README.md", "usr/share/doc/rmf-site-editor/README.md", "644"],
+]

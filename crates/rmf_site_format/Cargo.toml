@@ -24,8 +24,6 @@ bevy = { workspace = true, optional = true }
 sdformat = { workspace = true }
 # We depend on a bugfix released specifically in 0.7.3
 urdf-rs = { workspace = true, optional = true }
-# Used for lazy initialization of static variable when they are non const
-once_cell = {workspace = true}
 pathdiff = {workspace = true}
 
 [dev-dependencies]

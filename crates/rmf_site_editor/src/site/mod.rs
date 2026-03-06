@@ -170,6 +170,17 @@ use bevy::{
 
 use bevy_infinite_grid::*;
 
+/// Registers [`ChangePlugin`] (and optionally [`RecallPlugin`]) for each listed type,
+/// avoiding Rust tuple-size limits in `add_plugins`.
+macro_rules! add_change_plugins {
+    ($app:expr, $( $change:ty $(=> $recall:ty)? ),* $(,)?) => {
+        $(
+            $app.add_plugins(ChangePlugin::<$change>::default());
+            $( $app.add_plugins(RecallPlugin::<$recall>::default()); )?
+        )*
+    };
+}
+
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum SiteUpdateSet {
     /// We need a custom stage for assigning orphan elements because the
@@ -255,45 +266,40 @@ impl Plugin for SitePlugin {
         .add_event::<ConsiderAssociatedGraph>()
         .add_event::<ConsiderLocationTag>()
         .add_event::<MergeGroups>()
-        .add_plugins((
-            ChangePlugin::<AssociatedGraphs<Entity>>::default(),
-            RecallPlugin::<RecallAssociatedGraphs<Entity>>::default(),
-            ChangePlugin::<Motion>::default(),
-            RecallPlugin::<RecallMotion>::default(),
-            ChangePlugin::<ReverseLane>::default(),
-            RecallPlugin::<RecallReverseLane>::default(),
-            ChangePlugin::<NameOfSite>::default(),
-            ChangePlugin::<NameInSite>::default(),
-            ChangePlugin::<Pose>::default(),
-            ChangePlugin::<Scale>::default(),
-            ChangePlugin::<Distance>::default(),
-            ChangePlugin::<Texture>::default(),
-        ))
-        .add_plugins((
-            ChangePlugin::<DoorType>::default(),
-            RecallPlugin::<RecallDoorType>::default(),
-            ChangePlugin::<LevelElevation>::default(),
-            ChangePlugin::<LiftCabin<Entity>>::default(),
-            RecallPlugin::<RecallLiftCabin<Entity>>::default(),
-            ChangePlugin::<AssetSource>::default(),
-            RecallPlugin::<RecallAssetSource>::default(),
-            ChangePlugin::<PrimitiveShape>::default(),
-            RecallPlugin::<RecallPrimitiveShape>::default(),
-            ChangePlugin::<PixelsPerMeter>::default(),
-            ChangePlugin::<PhysicalCameraProperties>::default(),
-            ChangePlugin::<LightKind>::default(),
-            RecallPlugin::<RecallLightKind>::default(),
-            ChangePlugin::<DisplayColor>::default(),
-            ChangePlugin::<LocationTags>::default(),
-        ))
-        .add_plugins((
-            RecallPlugin::<RecallLocationTags>::default(),
-            ChangePlugin::<Visibility>::default(),
-            ChangePlugin::<LayerVisibility>::default(),
-            ChangePlugin::<GlobalFloorVisibility>::default(),
-            ChangePlugin::<GlobalDrawingVisibility>::default(),
-            ChangePlugin::<PreferredSemiTransparency>::default(),
-            ChangePlugin::<Affiliation<Entity>>::default(),
+        ;
+        add_change_plugins!(app,
+            AssociatedGraphs<Entity> => RecallAssociatedGraphs<Entity>,
+            Motion => RecallMotion,
+            ReverseLane => RecallReverseLane,
+            NameOfSite,
+            NameInSite,
+            Pose,
+            Scale,
+            Distance,
+            Texture,
+            DoorType => RecallDoorType,
+            LevelElevation,
+            LiftCabin<Entity> => RecallLiftCabin<Entity>,
+            AssetSource => RecallAssetSource,
+            PrimitiveShape => RecallPrimitiveShape,
+            PixelsPerMeter,
+            PhysicalCameraProperties,
+            LightKind => RecallLightKind,
+            DisplayColor,
+            LocationTags => RecallLocationTags,
+            Visibility,
+            LayerVisibility,
+            GlobalFloorVisibility,
+            GlobalDrawingVisibility,
+            PreferredSemiTransparency,
+            Affiliation<Entity>,
+            ModelProperty<AssetSource>,
+            ModelProperty<Scale>,
+            ModelProperty<IsStatic>,
+            ModelProperty<Robot>,
+            Task,
+        );
+        app.add_plugins((
             RecencyRankingPlugin::<NavGraphMarker>::default(),
             RecencyRankingPlugin::<FloorMarker>::default(),
             RecencyRankingPlugin::<DrawingMarker>::default(),
@@ -304,11 +310,6 @@ impl Plugin for SitePlugin {
             FuelPlugin::default(),
         ))
         .add_plugins((
-            ChangePlugin::<ModelProperty<AssetSource>>::default(),
-            ChangePlugin::<ModelProperty<Scale>>::default(),
-            ChangePlugin::<ModelProperty<IsStatic>>::default(),
-            ChangePlugin::<ModelProperty<Robot>>::default(),
-            ChangePlugin::<Task>::default(),
             PropertyPlugin::<Pose, InstanceMarker>::default(),
             PropertyPlugin::<Inclusion, InstanceMarker>::default(),
             PropertyPlugin::<Inclusion, Task>::default(),

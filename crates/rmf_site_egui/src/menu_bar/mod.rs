@@ -30,6 +30,7 @@ impl Plugin for MenuBarPlugin {
         app.add_plugins((HeaderPanelPlugin::default(), MenuDropdownPlugin::default()))
             .add_event::<MenuEvent>()
             .init_resource::<FileMenu>()
+            .init_resource::<EditMenu>()
             .init_resource::<ToolMenu>()
             .init_resource::<ViewMenu>();
     }
@@ -50,8 +51,9 @@ struct MenuDropdowns<'w, 's> {
     menus: Query<'w, 's, (&'static Menu, Entity)>,
     menu_items: Query<'w, 's, (&'static mut MenuItem, Has<MenuDisabled>)>,
     extension_events: EventWriter<'w, MenuEvent>,
-    view_menu: Res<'w, ViewMenu>,
     file_menu: Res<'w, FileMenu>,
+    edit_menu: Res<'w, EditMenu>,
+    view_menu: Res<'w, ViewMenu>,
     children: Query<'w, 's, &'static Children>,
     top_level_components: Query<'w, 's, (), Without<ChildOf>>,
 }
@@ -63,6 +65,17 @@ impl<'w, 's> WidgetSystem<Tile> for MenuDropdowns<'w, 's> {
             render_sub_menu(
                 ui,
                 &params.file_menu.get(),
+                &params.children,
+                &params.menus,
+                &params.menu_items,
+                &mut params.extension_events,
+                true,
+            );
+        });
+        ui.menu_button("Edit", |ui| {
+            render_sub_menu(
+                ui,
+                &params.edit_menu.get(),
                 &params.children,
                 &params.menus,
                 &params.menu_items,
@@ -84,7 +97,9 @@ impl<'w, 's> WidgetSystem<Tile> for MenuDropdowns<'w, 's> {
 
         for (_, entity) in params.menus.iter().filter(|(_, entity)| {
             params.top_level_components.contains(*entity)
-                && (*entity != params.file_menu.get() && *entity != params.view_menu.get())
+                && *entity != params.file_menu.get()
+                && *entity != params.edit_menu.get()
+                && *entity != params.view_menu.get()
         }) {
             render_sub_menu(
                 ui,
@@ -131,6 +146,7 @@ pub enum MenuItem {
     /// Text + Shortcut hint if available
     Text(TextMenuItem),
     CheckBox(String, bool),
+    Separator,
 }
 
 impl MenuItem {
@@ -192,6 +208,29 @@ impl FromWorld for FileMenu {
         let menu_item = world
             .spawn(Menu {
                 text: "File".to_string(),
+            })
+            .id();
+        Self { menu_item }
+    }
+}
+
+/// This resource provides the root entity for the edit menu
+#[derive(Resource)]
+pub struct EditMenu {
+    menu_item: Entity,
+}
+
+impl EditMenu {
+    pub fn get(&self) -> Entity {
+        self.menu_item
+    }
+}
+
+impl FromWorld for EditMenu {
+    fn from_world(world: &mut World) -> Self {
+        let menu_item = world
+            .spawn(Menu {
+                text: "Edit".to_string(),
             })
             .id();
         Self { menu_item }
@@ -293,6 +332,9 @@ pub fn render_sub_menu(
                 {
                     extension_events.write(MenuEvent::MenuClickEvent(*entity));
                 }
+            }
+            MenuItem::Separator => {
+                ui.separator();
             }
         }
         return;

@@ -52,6 +52,7 @@ pub fn make_cuboid(x_size: f32, y_size: f32, z_size: f32) -> MeshBuffer {
     ];
 
     MeshBuffer::new(positions, normals, indices)
+        .expect("cuboid positions and normals should have equal length")
 }
 
 pub fn make_cuboidy_wrap(circles: [OffsetCircle; 2], segments: u32) -> MeshBuffer {
@@ -99,5 +100,6 @@ pub fn make_cuboidy_wrap(circles: [OffsetCircle; 2], segments: u32) -> MeshBuffe
         });
     }
 
-    return MeshBuffer::new(positions, normals, indices);
+    return MeshBuffer::new(positions, normals, indices)
+        .expect("cuboidy wrap positions and normals should have equal length");
 }

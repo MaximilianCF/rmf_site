@@ -37,5 +37,6 @@ pub fn make_pyramid(circle: OffsetCircle, peak: [f32; 3], segments: u32) -> Mesh
         });
     }
 
-    return MeshBuffer::new(positions, normals, indices);
+    return MeshBuffer::new(positions, normals, indices)
+        .expect("pyramid positions and normals should have equal length");
 }

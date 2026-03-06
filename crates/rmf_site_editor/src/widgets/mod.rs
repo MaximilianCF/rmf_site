@@ -59,6 +59,9 @@ use creation::*;
 pub mod diagnostics;
 use diagnostics::*;
 
+pub mod edit_menu;
+use edit_menu::*;
+
 pub mod fuel_asset_browser;
 pub use fuel_asset_browser::*;
 
@@ -78,6 +81,9 @@ pub use sdf_export_menu::*;
 
 pub mod selector_widget;
 pub use selector_widget::*;
+
+pub mod status_bar;
+use status_bar::*;
 
 pub mod tasks;
 pub use tasks::*;
@@ -105,6 +111,9 @@ use view_lights::*;
 
 pub mod view_nav_graphs;
 use view_nav_graphs::*;
+
+pub mod notifications;
+pub use notifications::*;
 
 pub mod workspace;
 use workspace::*;
@@ -162,8 +171,11 @@ impl Plugin for StandardUiPlugin {
                 DiagnosticsPlugin::default(),
                 ConsoleWidgetPlugin::default(),
                 WorkspaceMenuPlugin::default(),
+                EditMenuPlugin::default(),
                 UserCameraDisplayPlugin::default(),
                 StandardCreationPlugin::default(),
+                NotificationsPlugin,
+                StatusBarPlugin,
                 #[cfg(not(target_arch = "wasm32"))]
                 SdfExportMenuPlugin::default(),
                 #[cfg(not(target_arch = "wasm32"))]

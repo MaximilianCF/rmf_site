@@ -497,11 +497,14 @@ pub fn move_pose(
     mut poses: Query<&mut Pose>,
     mut move_to: EventReader<MoveTo>,
     mut site_changed: ResMut<SiteChanged>,
+    snap: Res<SnapToGrid>,
 ) {
     for move_to in move_to.read() {
         if let Ok(mut pose) = poses.get_mut(move_to.entity) {
             site_changed.0 = true;
-            pose.align_with(&move_to.transform);
+            let mut tf = move_to.transform;
+            tf.translation = snap.snap_xy(tf.translation);
+            pose.align_with(&tf);
         }
     }
 }

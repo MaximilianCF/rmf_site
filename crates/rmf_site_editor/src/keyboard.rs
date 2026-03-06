@@ -16,8 +16,10 @@
 */
 
 use crate::{
+    interaction::SnapToGrid,
     site::{AlignSiteDrawings, Delete},
     undo::{RedoRequest, UndoRequest},
+    widgets::Notifications,
     CreateNewWorkspace, CurrentWorkspace, DebugMode, WorkspaceLoader, WorkspaceSaver,
 };
 use bevy::{prelude::*, window::PrimaryWindow};
@@ -51,6 +53,8 @@ fn handle_keyboard_input(
     mut workspace_saver: WorkspaceSaver,
     mut undo_request: EventWriter<UndoRequest>,
     mut redo_request: EventWriter<RedoRequest>,
+    mut snap: ResMut<SnapToGrid>,
+    mut notifications: ResMut<Notifications>,
 ) {
     let Some(egui_context) = primary_windows
         .single()
@@ -88,6 +92,23 @@ fn handle_keyboard_input(
     if keyboard_input.just_pressed(KeyCode::KeyD) {
         debug_mode.0 = !debug_mode.0;
         info!("Toggling debug mode: {debug_mode:?}");
+    }
+
+    if keyboard_input.just_pressed(KeyCode::KeyG) {
+        if keyboard_input.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
+            // Cycle grid size
+            let idx = SnapToGrid::PRESETS
+                .iter()
+                .position(|&s| (s - snap.grid_size).abs() < 1e-4)
+                .map(|i| (i + 1) % SnapToGrid::PRESETS.len())
+                .unwrap_or(0);
+            snap.grid_size = SnapToGrid::PRESETS[idx];
+            notifications.success(format!("Grid size: {}m", snap.grid_size));
+        } else {
+            snap.enabled = !snap.enabled;
+            let state = if snap.enabled { "ON" } else { "OFF" };
+            notifications.success(format!("Snap to grid: {state} ({}m)", snap.grid_size));
+        }
     }
 
     // Ctrl keybindings

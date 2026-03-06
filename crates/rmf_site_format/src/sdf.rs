@@ -16,18 +16,19 @@
 */
 
 use crate::{
-    Anchor, Angle, AssetSource, Category, DoorType, Level, LiftCabin, Pose, Rotation, Site, Swing,
+    Anchor, Angle, AssetSource, Category, DoorType, Level, LiftCabin, LightKind, Pose, Rotation,
+    Site, Swing,
 };
 use glam::Vec3;
-use once_cell::sync::Lazy;
 use sdformat::*;
 use std::collections::BTreeMap;
+use std::sync::LazyLock;
 use thiserror::Error;
 
 const DEFAULT_CABIN_MASS: f64 = 1200.0;
 
-static WORLD_TEMPLATE: Lazy<Result<SdfRoot, String>> =
-    Lazy::new(|| yaserde::de::from_str(include_str!("templates/gz_world.sdf")));
+static WORLD_TEMPLATE: LazyLock<Result<SdfRoot, String>> =
+    LazyLock::new(|| yaserde::de::from_str(include_str!("templates/gz_world.sdf")));
 
 #[derive(Debug, Error)]
 pub enum SdfConversionError {
@@ -420,6 +421,71 @@ fn make_sdf_door(
     plugin.elements.push(component);
     door_model.plugin = vec![plugin];
     Ok(door_model)
+}
+
+fn light_to_sdf(
+    light: &crate::Light,
+    level_name: &str,
+    elevation: f32,
+    idx: u32,
+) -> SdfLight {
+    let color_str = |c: [f32; 3]| format!("{} {} {} 1", c[0], c[1], c[2]);
+
+    // Offset the light pose by the level elevation
+    let mut pose = light.pose.clone();
+    pose.trans[2] += elevation;
+
+    match &light.kind {
+        LightKind::Point(pl) => SdfLight {
+            name: format!("{level_name}_point_light_{idx}"),
+            r#type: "point".into(),
+            cast_shadows: Some(pl.enable_shadows),
+            intensity: Some(pl.intensity as f64 / 800.0), // Normalize to 0-1 range
+            diffuse: Some(color_str(pl.color)),
+            specular: Some("0.1 0.1 0.1 1".into()),
+            attenuation: Some(SdfLightAttenuation {
+                range: pl.range as f64,
+                linear: Some(0.05),
+                constant: Some(0.8),
+                quadratic: Some(0.01),
+            }),
+            pose: Some(pose.to_sdf()),
+            ..Default::default()
+        },
+        LightKind::Spot(sl) => SdfLight {
+            name: format!("{level_name}_spot_light_{idx}"),
+            r#type: "spot".into(),
+            cast_shadows: Some(sl.enable_shadows),
+            intensity: Some(sl.intensity as f64 / 800.0),
+            diffuse: Some(color_str(sl.color)),
+            specular: Some("0.1 0.1 0.1 1".into()),
+            attenuation: Some(SdfLightAttenuation {
+                range: sl.range as f64,
+                linear: Some(0.05),
+                constant: Some(0.8),
+                quadratic: Some(0.01),
+            }),
+            spot: Some(SdfLightSpot {
+                inner_angle: 0.5,
+                outer_angle: 1.0,
+                falloff: 1.0,
+            }),
+            direction: Vector3d::new(0.0, 0.0, -1.0),
+            pose: Some(pose.to_sdf()),
+            ..Default::default()
+        },
+        LightKind::Directional(dl) => SdfLight {
+            name: format!("{level_name}_directional_light_{idx}"),
+            r#type: "directional".into(),
+            cast_shadows: Some(dl.enable_shadows),
+            intensity: Some((dl.illuminance / 100000.0) as f64),
+            diffuse: Some(color_str(dl.color)),
+            specular: Some("0.1 0.1 0.1 1".into()),
+            direction: Vector3d::new(0.0, 0.5, -1.0),
+            pose: Some(pose.to_sdf()),
+            ..Default::default()
+        },
+    }
 }
 
 impl Site {
@@ -874,6 +940,17 @@ impl Site {
             // easier transition of robots into lifts.
             // From tests simulation seems to also work without it, probably due to having changed
             // from full joint with wheel torques to just kinematic simulation for whole robots.
+        }
+
+        // Export lights from all levels
+        let mut light_idx = 0u32;
+        for (_, level) in &self.levels {
+            let elevation = level.properties.elevation.0;
+            for (_, light) in &level.lights {
+                let sdf_light = light_to_sdf(light, &level.properties.name.0, elevation, light_idx);
+                world.light.push(sdf_light);
+                light_idx += 1;
+            }
         }
 
         world.name = self.properties.name.0.clone();

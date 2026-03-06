@@ -96,7 +96,8 @@ pub fn make_smooth_wrap(circles: [OffsetCircle; 2], resolution: u32) -> MeshBuff
         normals[(i + top_start) as usize] = n.into();
     }
 
-    return MeshBuffer::new(positions, normals, indices);
+    return MeshBuffer::new(positions, normals, indices)
+        .expect("smooth wrap positions and normals should have equal length");
 }
 
 pub fn make_wall_mesh(
@@ -150,6 +151,7 @@ pub fn make_wall_mesh(
     ];
     make_cuboid(length, thickness, height)
         .with_uv(uv)
+        .expect("wall UV count should match position count")
         .transform_by(
             Affine3A::from_translation(Vec3::new(center.x, center.y, height / 2.0))
                 * Affine3A::from_rotation_z(yaw),
@@ -175,7 +177,8 @@ pub fn make_top_circle(circle: OffsetCircle, resolution: u32) -> MeshBuffer {
         .take(positions.len())
         .collect();
 
-    return MeshBuffer::new(positions, normals, indices);
+    return MeshBuffer::new(positions, normals, indices)
+        .expect("top circle positions and normals should have equal length");
 }
 
 pub fn make_bottom_circle(circle: OffsetCircle, resolution: u32) -> MeshBuffer {
@@ -197,7 +200,8 @@ pub fn make_bottom_circle(circle: OffsetCircle, resolution: u32) -> MeshBuffer {
         .take(positions.len())
         .collect();
 
-    return MeshBuffer::new(positions, normals, indices);
+    return MeshBuffer::new(positions, normals, indices)
+        .expect("bottom circle positions and normals should have equal length");
 }
 
 pub fn make_flat_disk(circle: OffsetCircle, resolution: u32) -> MeshBuffer {
@@ -309,8 +313,10 @@ pub fn flat_arc(
         .collect();
 
     MeshBuffer::new(positions, normals, indices)
+        .expect("flat arc positions and normals should have equal length")
         .with_outline(outline)
         .with_uv(uvs)
+        .expect("flat arc UV count should match position count")
         .transform_by(Affine3A::from_rotation_translation(
             Quat::from_rotation_z(*initial_angle),
             pivot,
@@ -341,8 +347,10 @@ pub fn line_stroke_mesh(start: Vec3, end: Vec3, thickness: f32) -> MeshBuffer {
     let yaw = dp.y.atan2(dp.x);
 
     MeshBuffer::new(positions, normals, indices)
+        .expect("line stroke positions and normals should have equal length")
         .with_outline(outline)
         .with_uv(uvs)
+        .expect("line stroke UV count should match position count")
         .transform_by(Affine3A::from_scale_rotation_translation(
             Vec3::new(dp.length(), thickness, 1.),
             Quat::from_rotation_z(yaw),
@@ -384,7 +392,7 @@ pub fn make_physical_camera_mesh() -> Mesh {
             * Affine3A::from_rotation_y(-90_f32.to_radians())
             * Affine3A::from_rotation_z(45_f32.to_radians()),
     )
-    .merge_into(&mut mesh);
+    .merge_into(&mut mesh).expect("merge camera lens hood outside");
 
     // Inside of the lens hood
     make_pyramid(
@@ -400,7 +408,7 @@ pub fn make_physical_camera_mesh() -> Mesh {
             * Affine3A::from_rotation_y(90_f32.to_radians())
             * Affine3A::from_rotation_z(45_f32.to_radians()),
     )
-    .merge_into(&mut mesh);
+    .merge_into(&mut mesh).expect("merge camera lens hood inside");
 
     mesh
 }
@@ -458,7 +466,9 @@ pub fn make_flat_rect_mesh(x_size: f32, y_size: f32) -> MeshBuffer {
     let outline = [0, 1, 1, 2, 2, 3, 3, 0].into_iter().collect();
 
     return MeshBuffer::new(positions, normals, indices)
+        .expect("flat rect positions and normals should have equal length")
         .with_uv(uv)
+        .expect("flat rect UV count should match position count")
         .with_outline(outline);
 }
 
@@ -492,6 +502,7 @@ pub fn make_ring(inner_radius: f32, outer_radius: f32, resolution: usize) -> Mes
         .collect();
 
     MeshBuffer::new(positions, normals, indices)
+        .expect("ring positions and normals should have equal length")
 }
 
 pub fn make_location_icon(radius: f32, height: f32, segments: usize) -> MeshBuffer {
@@ -644,7 +655,9 @@ pub fn make_closed_path_outline(mut initial_positions: Vec<[f32; 3]>) -> MeshBuf
     }
 
     MeshBuffer::new(positions, normals, indices)
+        .expect("closed path positions and normals should have equal length")
         .with_uv(uv)
+        .expect("closed path UV count should match position count")
         .copy_outline_normals()
 }
 

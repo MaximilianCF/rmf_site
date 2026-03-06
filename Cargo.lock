@@ -5740,7 +5740,6 @@ dependencies = [
  "bevy",
  "float_eq",
  "glam",
- "once_cell",
  "pathdiff",
  "sdformat",
  "serde",
@@ -5767,6 +5766,7 @@ dependencies = [
  "bevy_mod_outline",
  "bevy_reflect",
  "bevy_render",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

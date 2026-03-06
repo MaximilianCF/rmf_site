@@ -21,13 +21,13 @@ pub fn make_dagger_mesh() -> Mesh {
         PrimitiveTopology::TriangleList,
         RenderAssetUsages::default(),
     );
-    make_cuboidy_wrap([lower_ring, upper_ring], segments).merge_into(&mut mesh);
-    make_pyramid(upper_ring, [0., 0., top_height], segments).merge_into(&mut mesh);
+    make_cuboidy_wrap([lower_ring, upper_ring], segments).merge_into(&mut mesh).expect("merge dagger body");
+    make_pyramid(upper_ring, [0., 0., top_height], segments).merge_into(&mut mesh).expect("merge dagger tip");
     make_pyramid(lower_ring.flip_height(), [0., 0., 0.], segments)
         .transform_by(Affine3A::from_quat(Quat::from_rotation_y(
             180_f32.to_radians(),
         )))
-        .merge_into(&mut mesh);
+        .merge_into(&mut mesh).expect("merge dagger base");
     return mesh;
 }
 
@@ -59,7 +59,9 @@ pub fn flat_arrow_mesh(
 
     let outline: Vec<u32> = vec![0, 1, 1, 2, 2, 5, 5, 6, 6, 4, 4, 3, 3, 0];
 
-    MeshBuffer::new(positions, normals, indices).with_outline(outline)
+    MeshBuffer::new(positions, normals, indices)
+        .expect("flat arrow positions and normals should have equal length")
+        .with_outline(outline)
 }
 
 pub fn make_cylinder_arrow_mesh() -> Mesh {
@@ -85,10 +87,10 @@ pub fn make_cylinder_arrow_mesh() -> Mesh {
         PrimitiveTopology::TriangleList,
         RenderAssetUsages::default(),
     );
-    make_cone(head_base, tip, resolution).merge_into(&mut mesh);
-    make_smooth_wrap([cylinder_top, cylinder_bottom], resolution).merge_into(&mut mesh);
-    make_smooth_wrap([head_base, cylinder_top], resolution).merge_into(&mut mesh);
-    make_bottom_circle(cylinder_bottom, resolution).merge_into(&mut mesh);
+    make_cone(head_base, tip, resolution).merge_into(&mut mesh).expect("merge cylinder arrow head");
+    make_smooth_wrap([cylinder_top, cylinder_bottom], resolution).merge_into(&mut mesh).expect("merge cylinder arrow body");
+    make_smooth_wrap([head_base, cylinder_top], resolution).merge_into(&mut mesh).expect("merge cylinder arrow neck");
+    make_bottom_circle(cylinder_bottom, resolution).merge_into(&mut mesh).expect("merge cylinder arrow base");
     return mesh;
 }
 
@@ -153,6 +155,7 @@ pub fn make_triangular_arrow() -> MeshBuffer {
         .collect();
 
     MeshBuffer::new(positions, normals, indices)
+        .expect("triangular arrow positions and normals should have equal length")
 }
 
 pub fn make_triangular_arrow_mesh() -> Mesh {

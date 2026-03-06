@@ -89,6 +89,9 @@ pub use preview::*;
 pub mod select_impl;
 pub use select_impl::*;
 
+pub mod snap;
+pub use snap::*;
+
 pub mod user_camera;
 pub use user_camera::*;
 
@@ -152,6 +155,7 @@ impl Plugin for InteractionPlugin {
             .init_resource::<InteractionAssets>()
             .init_resource::<Cursor>()
             .init_resource::<GizmoState>()
+            .init_resource::<SnapToGrid>()
             .init_resource::<CurrentEditDrawing>()
             .init_resource::<CurrentLevel>()
             .insert_resource(HighlightAnchors(false))
