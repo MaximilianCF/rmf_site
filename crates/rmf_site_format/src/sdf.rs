@@ -423,12 +423,7 @@ fn make_sdf_door(
     Ok(door_model)
 }
 
-fn light_to_sdf(
-    light: &crate::Light,
-    level_name: &str,
-    elevation: f32,
-    idx: u32,
-) -> SdfLight {
+fn light_to_sdf(light: &crate::Light, level_name: &str, elevation: f32, idx: u32) -> SdfLight {
     let color_str = |c: [f32; 3]| format!("{} {} {} 1", c[0], c[1], c[2]);
 
     // Offset the light pose by the level elevation

@@ -265,8 +265,7 @@ impl Plugin for SitePlugin {
         .add_event::<ExportLights>()
         .add_event::<ConsiderAssociatedGraph>()
         .add_event::<ConsiderLocationTag>()
-        .add_event::<MergeGroups>()
-        ;
+        .add_event::<MergeGroups>();
         add_change_plugins!(app,
             AssociatedGraphs<Entity> => RecallAssociatedGraphs<Entity>,
             Motion => RecallMotion,

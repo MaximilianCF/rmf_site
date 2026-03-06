@@ -15,7 +15,7 @@
  *
 */
 
-use crate::{SemVer, CURRENT_MAJOR_VERSION, CURRENT_MINOR_VERSION};
+use crate::{CURRENT_MAJOR_VERSION, CURRENT_MINOR_VERSION, SemVer};
 use serde_json::Value;
 use thiserror::Error;
 

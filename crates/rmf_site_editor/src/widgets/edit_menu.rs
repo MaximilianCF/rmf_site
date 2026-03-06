@@ -33,9 +33,7 @@ impl FromWorld for EditMenuItems {
                 MenuDisabled,
             ))
             .id();
-        let separator = world
-            .spawn((MenuItem::Separator, ChildOf(edit_menu)))
-            .id();
+        let separator = world.spawn((MenuItem::Separator, ChildOf(edit_menu))).id();
         let delete = world
             .spawn((
                 MenuItem::Text(TextMenuItem::new("Delete").shortcut("Del")),

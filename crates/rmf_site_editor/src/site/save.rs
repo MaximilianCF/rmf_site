@@ -33,8 +33,8 @@ use std::{
 use thiserror::Error as ThisError;
 
 use crate::{
-    exit_confirmation::SiteChanged, recency::RecencyRanking, site::*,
-    widgets::Notifications, ExportFormat,
+    exit_confirmation::SiteChanged, recency::RecencyRanking, site::*, widgets::Notifications,
+    ExportFormat,
 };
 use rmf_site_format::*;
 use sdformat::yaserde;
@@ -1806,18 +1806,18 @@ pub fn save_site(world: &mut World) {
                 match site.to_writer_json(f) {
                     Ok(()) => {
                         info!("Save successful");
-                        world.resource_mut::<Notifications>().success(
-                            format!("Saved to {}", new_path.display()),
-                        );
+                        world
+                            .resource_mut::<Notifications>()
+                            .success(format!("Saved to {}", new_path.display()));
                     }
                     Err(err) => {
                         if let Some(old_default_path) = old_default_path {
                             world.entity_mut(save_event.site).insert(old_default_path);
                         }
                         error!("Save failed: {err}");
-                        world.resource_mut::<Notifications>().error(
-                            format!("Save failed: {err}"),
-                        );
+                        world
+                            .resource_mut::<Notifications>()
+                            .error(format!("Save failed: {err}"));
                         continue;
                     }
                 }
@@ -1891,24 +1891,27 @@ pub fn save_site(world: &mut World) {
                 };
                 if let Err(e) = yaserde::ser::serialize_with_writer(&sdf, f, &config) {
                     error!("Failed serializing site to sdf: {e}");
-                    world.resource_mut::<Notifications>().error(
-                        format!("SDF export failed: {e}"),
-                    );
+                    world
+                        .resource_mut::<Notifications>()
+                        .error(format!("SDF export failed: {e}"));
                     continue;
                 }
                 // Generate ROS 2 launch file alongside SDF
-                let launch_path = new_path.join("launch.py");
-                let world_file = format!("{}.world", site.properties.name.0);
-                let launch_content = generate_ros2_launch_file(&world_file);
-                if let Err(e) = std::fs::write(&launch_path, launch_content) {
-                    warn!("Could not write launch file: {e}");
-                } else {
-                    info!("Launch file written to {}", launch_path.display());
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    let launch_path = new_path.join("launch.py");
+                    let world_file = format!("{}.world", site.properties.name.0);
+                    let launch_content = generate_ros2_launch_file(&world_file);
+                    if let Err(e) = std::fs::write(&launch_path, launch_content) {
+                        warn!("Could not write launch file: {e}");
+                    } else {
+                        info!("Launch file written to {}", launch_path.display());
+                    }
                 }
 
-                world.resource_mut::<Notifications>().success(
-                    format!("SDF exported to {}", new_path.display()),
-                );
+                world
+                    .resource_mut::<Notifications>()
+                    .success(format!("SDF exported to {}", new_path.display()));
             }
             ExportFormat::NavGraph => {
                 let site = match generate_site(world, save_event.site) {
@@ -1941,9 +1944,9 @@ pub fn save_site(world: &mut World) {
                     "Saving all site nav graphs to {}",
                     new_path.to_str().unwrap_or("<failed to render??>")
                 );
-                world.resource_mut::<Notifications>().success(
-                    format!("Nav graphs exported to {}", new_path.display()),
-                );
+                world
+                    .resource_mut::<Notifications>()
+                    .success(format!("Nav graphs exported to {}", new_path.display()));
             }
         }
     }

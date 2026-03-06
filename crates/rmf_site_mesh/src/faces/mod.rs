@@ -392,7 +392,8 @@ pub fn make_physical_camera_mesh() -> Mesh {
             * Affine3A::from_rotation_y(-90_f32.to_radians())
             * Affine3A::from_rotation_z(45_f32.to_radians()),
     )
-    .merge_into(&mut mesh).expect("merge camera lens hood outside");
+    .merge_into(&mut mesh)
+    .expect("merge camera lens hood outside");
 
     // Inside of the lens hood
     make_pyramid(
@@ -408,7 +409,8 @@ pub fn make_physical_camera_mesh() -> Mesh {
             * Affine3A::from_rotation_y(90_f32.to_radians())
             * Affine3A::from_rotation_z(45_f32.to_radians()),
     )
-    .merge_into(&mut mesh).expect("merge camera lens hood inside");
+    .merge_into(&mut mesh)
+    .expect("merge camera lens hood inside");
 
     mesh
 }
