@@ -20,6 +20,8 @@ use crate::{site::LoadSite, AppState, Autoload, WorkspaceLoader};
 use bevy::{app::AppExit, prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 fn egui_ui(
     mut egui_context: EguiContexts,
     mut _exit: EventWriter<AppExit>,
@@ -46,41 +48,90 @@ fn egui_ui(
         return;
     };
 
-    egui::Window::new("Welcome!")
-        .collapsible(false)
-        .resizable(false)
-        .title_bar(false)
-        .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0., 0.))
+    let panel_fill = egui::Color32::from_rgb(30, 30, 35);
+
+    egui::CentralPanel::default()
+        .frame(egui::Frame::NONE.fill(panel_fill))
         .show(ctx, |ui| {
-            ui.heading("Welcome to The RMF Site Editor!");
-            ui.add_space(10.);
+            let available = ui.available_size();
 
-            ui.horizontal(|ui| {
-                if ui.button("View demo map").clicked() {
-                    workspace_loader
-                        .load_site(async move { LoadSite::from_data(&demo_office(), None) });
-                }
+            // Center everything vertically
+            let content_height = 320.0;
+            let top_pad = ((available.y - content_height) / 2.0).max(40.0);
 
-                if ui.button("Open a file").clicked() {
-                    workspace_loader.load_from_dialog();
-                }
+            ui.add_space(top_pad);
 
-                if ui.button("Create new file").clicked() {
-                    workspace_loader.create_empty_from_dialog();
+            ui.vertical_centered(|ui| {
+                // Title
+                ui.label(
+                    egui::RichText::new("RMF Site Editor")
+                        .size(32.0)
+                        .strong()
+                        .color(egui::Color32::from_rgb(240, 240, 240)),
+                );
+                ui.add_space(4.0);
+                ui.label(
+                    egui::RichText::new(format!("v{VERSION}  --  Desktop Edition"))
+                        .size(13.0)
+                        .color(egui::Color32::from_rgb(140, 140, 150)),
+                );
+
+                ui.add_space(40.0);
+
+                // Action buttons in a centered column
+                let button_width = 260.0;
+                let button_height = 36.0;
+
+                ui.scope(|ui| {
+                    ui.spacing_mut().item_spacing.y = 10.0;
+
+                    let new_btn = egui::Button::new(egui::RichText::new("New Project").size(15.0))
+                        .min_size(egui::vec2(button_width, button_height));
+                    if ui.add(new_btn).clicked() {
+                        workspace_loader.create_empty_from_dialog();
+                    }
+
+                    let open_btn = egui::Button::new(egui::RichText::new("Open File").size(15.0))
+                        .min_size(egui::vec2(button_width, button_height));
+                    if ui.add(open_btn).clicked() {
+                        workspace_loader.load_from_dialog();
+                    }
+
+                    let demo_btn =
+                        egui::Button::new(egui::RichText::new("Load Demo Map").size(15.0))
+                            .min_size(egui::vec2(button_width, button_height))
+                            .fill(egui::Color32::from_rgb(45, 45, 55));
+                    if ui.add(demo_btn).clicked() {
+                        workspace_loader
+                            .load_site(async move { LoadSite::from_data(&demo_office(), None) });
+                    }
+                });
+
+                ui.add_space(30.0);
+
+                // Keyboard hints
+                ui.label(
+                    egui::RichText::new("Ctrl+N  New  |  Ctrl+O  Open  |  Ctrl+S  Save")
+                        .size(11.0)
+                        .color(egui::Color32::from_rgb(100, 100, 110)),
+                );
+
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    ui.add_space(20.0);
+                    let exit_btn = egui::Button::new(
+                        egui::RichText::new("Exit")
+                            .size(13.0)
+                            .color(egui::Color32::from_rgb(160, 160, 170)),
+                    )
+                    .fill(egui::Color32::TRANSPARENT)
+                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(70, 70, 80)))
+                    .min_size(egui::vec2(100.0, 28.0));
+                    if ui.add(exit_btn).clicked() {
+                        _exit.write(AppExit::Success);
+                    }
                 }
             });
-
-            #[cfg(not(target_arch = "wasm32"))]
-            {
-                ui.add_space(20.);
-                ui.horizontal(|ui| {
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button("Exit").clicked() {
-                            _exit.write(AppExit::Success);
-                        }
-                    });
-                });
-            }
         });
 }
 

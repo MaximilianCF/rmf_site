@@ -34,7 +34,7 @@ pub fn orbit_camera_around_point(
     yaw: f32,
     zoom: f32,
 ) -> Transform {
-    let mut camera_transform_next = camera_transform.clone();
+    let mut camera_transform_next = *camera_transform;
 
     // Rotation
     // Exclude pitch if exceeds maximum angle in orthographic mode
@@ -61,12 +61,12 @@ pub fn orbit_camera_around_point(
         * zoom;
     camera_transform_next.translation += zoom_translation;
 
-    return camera_transform_next;
+    camera_transform_next
 }
 
 /// Multiplied over the zoom translation to make zoom proportionally faster when further away
 pub fn zoom_distance_factor(camera_translation: Vec3, target_translation: Vec3) -> f32 {
-    return (0.2 * (camera_translation - target_translation).length()).max(1.0);
+    (0.2 * (camera_translation - target_translation).length()).max(1.0)
 }
 
 /// Get the nearest intersection from the center of the visible viewport.
@@ -95,15 +95,15 @@ pub fn get_camera_selected_point(
 
     //TODO(@reuben-thomas) Filter for selectable entities
     let intersections = mesh_ray_cast.cast_ray(camera_ray, &ray_cast_setting);
-    if intersections.len() > 0 {
+    if !intersections.is_empty() {
         let (_, ray_mesh_hit) = &intersections[0];
-        return Ok(ray_mesh_hit.point);
+        Ok(ray_mesh_hit.point)
     } else {
-        return Ok(get_groundplane_else_default_selection(
+        Ok(get_groundplane_else_default_selection(
             camera_ray.origin,
             *camera_ray.direction,
             *camera_ray.direction,
-        ));
+        ))
     }
 }
 
@@ -127,6 +127,5 @@ pub fn get_groundplane_else_default_selection(
     // Pick a point on arbitrary plane in front
     let height = selector_origin.z.abs();
     let plane_dist = height.max(MIN_SELECTION_DIST);
-    return selector_origin
-        + selector_direction * (plane_dist / selector_direction.dot(camera_direction));
+    selector_origin + selector_direction * (plane_dist / selector_direction.dot(camera_direction))
 }

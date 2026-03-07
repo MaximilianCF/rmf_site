@@ -90,6 +90,7 @@ impl CursorCommand {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn update_cursor_command(
     mut camera_config: ResMut<CameraConfig>,
     mut cursor_command: ResMut<CursorCommand>,
@@ -195,8 +196,8 @@ pub fn update_cursor_command(
             ProjectionMode::Orthographic => {
                 if let Projection::Orthographic(camera_proj) = camera_proj {
                     *cursor_command = get_orthographic_cursor_command(
-                        &camera_transform,
-                        &camera_proj,
+                        camera_transform,
+                        camera_proj,
                         command_type,
                         cursor_selection,
                         cursor_selection_new,
@@ -207,8 +208,8 @@ pub fn update_cursor_command(
             ProjectionMode::Perspective => {
                 if let Projection::Perspective(camera_proj) = camera_proj {
                     *cursor_command = get_perspective_cursor_command(
-                        &camera_transform,
-                        &camera_proj,
+                        camera_transform,
+                        camera_proj,
                         command_type,
                         cursor_direction,
                         cursor_direction_camera_frame,
@@ -281,9 +282,10 @@ fn get_orthographic_cursor_command(
         None
     };
 
-    return cursor_command;
+    cursor_command
 }
 
+#[allow(clippy::too_many_arguments)]
 fn get_perspective_cursor_command(
     camera_transform: &Transform,
     camera_proj: &PerspectiveProjection,
@@ -358,7 +360,7 @@ fn get_perspective_cursor_command(
         None
     };
 
-    return cursor_command;
+    cursor_command
 }
 
 /// Pans camera such that selection remains under cursor
@@ -368,7 +370,7 @@ fn pan_camera_with_cursor(
     cursor_direction: Vec3,
     scroll_motion: f32,
 ) -> Transform {
-    let mut camera_transform_next = camera_transform.clone();
+    let mut camera_transform_next = *camera_transform;
     // To keep the same point below the cursor, we solve
     // selection_to_camera + translation_delta = selection_to_camera_next
     // selection_to_camera_next = x3 * -cursor_direction
@@ -405,7 +407,7 @@ fn pan_camera_with_cursor(
         * scroll_motion;
     camera_transform_next.translation += zoom_translation;
 
-    return camera_transform_next;
+    camera_transform_next
 }
 
 fn get_command_type(
@@ -443,5 +445,5 @@ fn get_command_type(
         }
     }
 
-    return CameraCommandType::Inactive;
+    CameraCommandType::Inactive
 }

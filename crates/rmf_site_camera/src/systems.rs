@@ -245,6 +245,7 @@ pub fn toggle_headlights(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn camera_config(
     mut pan_to: ResMut<PanToElement>,
     mut cursor_command: ResMut<CursorCommand>,

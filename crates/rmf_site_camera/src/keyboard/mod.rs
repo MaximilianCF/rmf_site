@@ -87,6 +87,7 @@ impl KeyboardCommand {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn update_keyboard_command(
     mut camera_config: ResMut<CameraConfig>,
     camera_controls: ResMut<CameraControls>,
@@ -99,7 +100,7 @@ pub(crate) fn update_keyboard_command(
     primary_windows: Query<&Window, With<PrimaryWindow>>,
     uncovered_window_area: Option<Res<UserCameraDisplay>>,
 ) {
-    if let Ok(_) = primary_windows.single() {
+    if primary_windows.single().is_ok() {
         // User inputs
         let is_shifting = keyboard_input.pressed(KeyCode::ShiftLeft)
             || keyboard_input.pressed(KeyCode::ShiftRight);
@@ -201,8 +202,8 @@ pub(crate) fn update_keyboard_command(
         let camera_selection = match keyboard_command.camera_selection {
             Some(camera_selection) => Ok(camera_selection),
             None => get_camera_selected_point(
-                &camera,
-                &camera_global_transform,
+                camera,
+                camera_global_transform,
                 uncovered_window_area,
                 mesh_ray_cast,
             ),
@@ -291,9 +292,10 @@ fn get_orthographic_command(
     keyboard_command.keyboard_motion = keyboard_motion;
     keyboard_command.zoom_motion = zoom_motion;
 
-    return keyboard_command;
+    keyboard_command
 }
 
+#[allow(clippy::too_many_arguments)]
 fn get_perspective_command(
     command_type: CameraCommandType,
     camera_proj: &PerspectiveProjection,
@@ -347,5 +349,5 @@ fn get_perspective_command(
     keyboard_command.command_type = command_type;
     keyboard_command.keyboard_motion = keyboard_motion;
     keyboard_command.zoom_motion = zoom_motion;
-    return keyboard_command;
+    keyboard_command
 }
