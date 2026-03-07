@@ -27,11 +27,14 @@ use bevy::prelude::*;
 use bevy_egui::egui::{ComboBox, RichText, Ui};
 use rmf_site_egui::WidgetSystem;
 use rmf_site_format::{
-    Angle, Dock, Motion, OrientationConstraint, RecallMotion, RecallReverseLane, ReverseLane,
+    Angle, Dock, LaneType, Motion, OrientationConstraint, RecallMotion, RecallReverseLane,
+    ReverseLane,
 };
 
 #[derive(SystemParam)]
 pub struct InspectMotion<'w, 's> {
+    commands: Commands<'w, 's>,
+    lane_types: Query<'w, 's, &'static LaneType>,
     forward: InspectForwardMotion<'w, 's>,
     reverse: InspectReverseMotion<'w, 's>,
 }
@@ -44,6 +47,23 @@ impl<'w, 's> WidgetSystem<Inspect> for InspectMotion<'w, 's> {
         world: &mut World,
     ) {
         let mut params = state.get_mut(world);
+        // Show lane type selector if this entity has a LaneType
+        if let Ok(lane_type) = params.lane_types.get(selection) {
+            let mut current = *lane_type;
+            ui.label(RichText::new("Lane Type").size(18.0));
+            ComboBox::from_id_salt("Lane Type")
+                .selected_text(current.label())
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut current, LaneType::Robot, LaneType::Robot.label());
+                    ui.selectable_value(&mut current, LaneType::Human, LaneType::Human.label());
+                });
+            if current != *lane_type {
+                params
+                    .commands
+                    .trigger(Change::new(current, selection));
+            }
+            ui.add_space(10.0);
+        }
         params.forward.show_widget(selection, ui);
         params.reverse.show_widget(selection, ui);
     }

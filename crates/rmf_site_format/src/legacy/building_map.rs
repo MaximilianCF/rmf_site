@@ -700,6 +700,7 @@ impl BuildingMap {
 
                 let site_lane = SiteLane {
                     anchors: [left, right].into(),
+                    lane_type: Default::default(),
                     forward: motion,
                     reverse,
                     mutex,

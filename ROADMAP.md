@@ -123,6 +123,20 @@ Upstream repo: https://github.com/open-rmf/rmf_site
 - Keyboard: F2/F3/Delete/Debug feedback via toast notifications
 - Keyboard refactored to stay within Bevy 16-param system limit
 
+### v0.0.7 -- Preferences & Human Lanes
+
+**User Preferences Persistence**
+- Window size and last opened file saved to `~/.config/rmf_site_editor/preferences.json`
+- Window restores to last used dimensions on startup
+- "Open Recent" button on welcome screen when a previous file exists
+- Auto-save every 30s, save on exit
+
+**Human Lanes** (from traffic_editor)
+- `LaneType` enum added to format: Robot (default), Human
+- Human lanes render narrower (0.35m vs 0.5m) with orange/amber tint
+- Lane type selector in inspector panel (ComboBox)
+- Persisted in `.site.json`, backward-compatible (defaults to Robot)
+
 ---
 
 ## Planned

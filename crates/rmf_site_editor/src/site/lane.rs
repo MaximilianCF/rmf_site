@@ -20,7 +20,7 @@ use crate::{CurrentWorkspace, Issue, ValidateWorkspace};
 use bevy::ecs::{hierarchy::ChildOf, relationship::AncestorIter};
 use bevy::pbr::ExtendedMaterial;
 use bevy::prelude::*;
-use rmf_site_format::{Edge, LaneMarker};
+use rmf_site_format::{Edge, LaneMarker, LaneType};
 use std::collections::{BTreeSet, HashMap};
 use uuid::Uuid;
 
@@ -29,6 +29,7 @@ use bevy::picking::Pickable;
 // TODO(MXG): Make this configurable, perhaps even a field in the Lane data
 // so users can customize the lane width per lane.
 pub const LANE_WIDTH: f32 = 0.5;
+pub const HUMAN_LANE_WIDTH: f32 = 0.35;
 pub const DEFAULT_LANE_ARROW_SPEED: f32 = 0.5;
 
 #[derive(Component, Debug, Clone, Copy)]
@@ -96,6 +97,7 @@ pub fn add_lane_visuals(
             Option<&RecallMotion>,
             &Edge<Entity>,
             &AssociatedGraphs<Entity>,
+            &LaneType,
         ),
         Added<LaneMarker>,
     >,
@@ -108,7 +110,7 @@ pub fn add_lane_visuals(
     current_level: Res<CurrentLevel>,
     mut extended_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, LaneArrowMaterial>>>,
 ) {
-    for (e, motion, reverse, recall, edge, associated_graphs) in &lanes {
+    for (e, motion, reverse, recall, edge, associated_graphs, lane_type) in &lanes {
         for anchor in &edge.array() {
             if let Ok(mut deps) = dependents.get_mut(*anchor) {
                 deps.insert(e);
@@ -192,7 +194,11 @@ pub fn add_lane_visuals(
                 .unwrap_or(DEFAULT_LANE_ARROW_SPEED),
         };
 
-        let lane_color = lane_color.to_linear();
+        let width = match lane_type {
+            LaneType::Robot => LANE_WIDTH,
+            LaneType::Human => HUMAN_LANE_WIDTH,
+        };
+        let lane_color = apply_lane_type_tint(lane_color, *lane_type).to_linear();
         let mid = commands
             .spawn((
                 Mesh3d(assets.lane_mid_mesh.clone()),
@@ -206,7 +212,7 @@ pub fn add_lane_visuals(
                         double_arrow_color: backward_arrow_color(lane_color),
                         background_color: lane_color,
                         number_of_arrows: BigF32::new(
-                            (start_anchor - end_anchor).length() / LANE_WIDTH,
+                            (start_anchor - end_anchor).length() / width,
                         ),
                         speeds: LaneShaderSpeeds {
                             forward: forward_speed_limit,
@@ -217,7 +223,7 @@ pub fn add_lane_visuals(
                         interacting: BigU32::new(false as u32),
                     },
                 })),
-                line_stroke_transform(&start_anchor, &end_anchor, LANE_WIDTH),
+                line_stroke_transform(&start_anchor, &end_anchor, width),
                 Visibility::default(),
             ))
             .insert(ChildOf(rank_layer))
@@ -328,6 +334,58 @@ pub fn update_lane_motion_visuals(
     }
 }
 
+pub fn update_lane_type_visuals(
+    lanes: Query<
+        (
+            &LaneSegments,
+            &Edge<Entity>,
+            &AssociatedGraphs<Entity>,
+            &LaneType,
+        ),
+        Changed<LaneType>,
+    >,
+    graphs: GraphSelect,
+    lane_materials: Query<&MeshMaterial3d<ExtendedMaterial<StandardMaterial, LaneArrowMaterial>>>,
+    mut extended_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, LaneArrowMaterial>>>,
+    anchors: AnchorParams,
+    mut transforms: Query<&mut Transform>,
+) {
+    for (segments, edge, associated, lane_type) in &lanes {
+        // Update color
+        impl_update_color_for_lane(
+            associated,
+            segments,
+            *lane_type,
+            &graphs,
+            &lane_materials,
+            &mut extended_materials,
+        );
+
+        // Update width via mid segment transform
+        let width = match lane_type {
+            LaneType::Robot => LANE_WIDTH,
+            LaneType::Human => HUMAN_LANE_WIDTH,
+        };
+        let start_anchor = anchors
+            .point_in_parent_frame_of(edge.left(), Category::Lane, segments.start)
+            .unwrap_or_default();
+        let end_anchor = anchors
+            .point_in_parent_frame_of(edge.right(), Category::Lane, segments.end)
+            .unwrap_or_default();
+        if let Some(mut tf) = transforms.get_mut(segments.mid).ok() {
+            *tf = line_stroke_transform(&start_anchor, &end_anchor, width);
+        }
+
+        // Update arrow count for new width
+        if let Ok(mat) = lane_materials.get(segments.mid) {
+            if let Some(lane_mat) = extended_materials.get_mut(&mat.0) {
+                *lane_mat.extension.number_of_arrows =
+                    (start_anchor - end_anchor).length() / width;
+            }
+        }
+    }
+}
+
 pub fn update_changed_lane(
     mut lanes: Query<
         (
@@ -430,7 +488,7 @@ pub fn remove_association_for_deleted_graphs(
 
 pub fn update_color_for_lanes(
     changed_lanes: Query<
-        (&AssociatedGraphs<Entity>, &LaneSegments),
+        (&AssociatedGraphs<Entity>, &LaneSegments, &LaneType),
         (With<LaneMarker>, Changed<AssociatedGraphs<Entity>>),
     >,
     any_graphs_changed: Query<
@@ -444,29 +502,28 @@ pub fn update_color_for_lanes(
             With<NavGraphMarker>,
         ),
     >,
-    all_lanes: Query<(&AssociatedGraphs<Entity>, &LaneSegments), With<LaneMarker>>,
+    all_lanes: Query<(&AssociatedGraphs<Entity>, &LaneSegments, &LaneType), With<LaneMarker>>,
     graphs: GraphSelect,
     lane_materials: Query<&MeshMaterial3d<ExtendedMaterial<StandardMaterial, LaneArrowMaterial>>>,
     mut extended_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, LaneArrowMaterial>>>,
 ) {
     if any_graphs_changed.is_empty() {
-        // No nav graph colors have changed, so only look at lanes who have changed
-        // their associated graphs
-        for (associated, segments) in changed_lanes {
+        for (associated, segments, lane_type) in changed_lanes {
             impl_update_color_for_lane(
                 associated,
                 segments,
+                *lane_type,
                 &graphs,
                 &lane_materials,
                 &mut extended_materials,
             );
         }
     } else {
-        // A nav graph color has changed, so update all lanes just to be safe
-        for (associated, segments) in all_lanes {
+        for (associated, segments, lane_type) in all_lanes {
             impl_update_color_for_lane(
                 associated,
                 segments,
+                *lane_type,
                 &graphs,
                 &lane_materials,
                 &mut extended_materials,
@@ -478,18 +535,36 @@ pub fn update_color_for_lanes(
 fn impl_update_color_for_lane(
     associated: &AssociatedGraphs<Entity>,
     segments: &LaneSegments,
+    lane_type: LaneType,
     graphs: &GraphSelect,
     lane_materials: &Query<&MeshMaterial3d<ExtendedMaterial<StandardMaterial, LaneArrowMaterial>>>,
     extended_materials: &mut ResMut<Assets<ExtendedMaterial<StandardMaterial, LaneArrowMaterial>>>,
 ) {
     let (_, color, _) = graphs.display_style(associated);
-    let new_color = color.to_linear();
+    let new_color = apply_lane_type_tint(color, lane_type).to_linear();
 
     if let Ok(ext_mat) = lane_materials.get(segments.mid) {
         if let Some(lane_mat) = extended_materials.get_mut(&ext_mat.0) {
             lane_mat.extension.background_color = new_color;
             lane_mat.extension.single_arrow_color = forward_arrow_color(new_color);
             lane_mat.extension.double_arrow_color = backward_arrow_color(new_color);
+        }
+    }
+}
+
+/// Apply a color tint to distinguish human lanes from robot lanes.
+/// Human lanes get an orange/amber tint.
+fn apply_lane_type_tint(color: Color, lane_type: LaneType) -> Color {
+    match lane_type {
+        LaneType::Robot => color,
+        LaneType::Human => {
+            let linear = color.to_linear();
+            Color::linear_rgba(
+                (linear.red * 0.5 + 0.5).clamp(0.0, 1.0),
+                (linear.green * 0.5 + 0.3).clamp(0.0, 1.0),
+                (linear.blue * 0.2).clamp(0.0, 1.0),
+                linear.alpha,
+            )
         }
     }
 }

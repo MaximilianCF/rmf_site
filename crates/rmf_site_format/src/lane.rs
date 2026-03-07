@@ -21,11 +21,35 @@ use bevy::prelude::{Bundle, Component};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "bevy", derive(Component))]
+pub enum LaneType {
+    #[default]
+    Robot,
+    Human,
+}
+
+impl LaneType {
+    pub fn label(&self) -> &str {
+        match self {
+            Self::Robot => "Robot",
+            Self::Human => "Human",
+        }
+    }
+
+    pub fn is_default(&self) -> bool {
+        matches!(self, Self::Robot)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "bevy", derive(Bundle))]
 pub struct Lane<T: RefTrait> {
     /// The endpoints of the lane (start, end)
     pub anchors: Edge<T>,
+    /// The type of lane (robot or human)
+    #[serde(default, skip_serializing_if = "LaneType::is_default")]
+    pub lane_type: LaneType,
     /// The properties of the lane when traveling forwards
     #[serde(default, skip_serializing_if = "is_default")]
     pub forward: Motion,
@@ -200,6 +224,7 @@ impl<T: RefTrait> Lane<T> {
     pub fn convert<U: RefTrait>(&self, id_map: &HashMap<T, U>) -> Result<Lane<U>, T> {
         Ok(Lane {
             anchors: self.anchors.convert(id_map)?,
+            lane_type: self.lane_type,
             forward: self.forward.clone(),
             reverse: self.reverse.clone(),
             mutex: self.mutex.convert(id_map)?,
@@ -213,6 +238,7 @@ impl<T: RefTrait> From<Edge<T>> for Lane<T> {
     fn from(edge: Edge<T>) -> Self {
         Lane {
             anchors: edge,
+            lane_type: Default::default(),
             forward: Default::default(),
             reverse: Default::default(),
             mutex: Default::default(),
