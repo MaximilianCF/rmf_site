@@ -551,3 +551,49 @@ pub fn check_for_duplicated_location_names(
         }
     }
 }
+
+/// When Graph View mode changes, recolor locations by their tag type
+/// (charger=yellow, parking=blue, holding=purple, plain=green).
+/// When Graph View is off, restore nav graph colors.
+pub fn update_location_colors_for_graph_view(
+    graph_view: Res<NavGraphViewMode>,
+    mut locations: Query<
+        (
+            &LocationTags,
+            &AssociatedGraphs<Entity>,
+            &mut MeshMaterial3d<StandardMaterial>,
+        ),
+        Without<NavGraphMarker>,
+    >,
+    assets: Res<SiteAssets>,
+    graphs: GraphSelect,
+) {
+    if !graph_view.is_changed() {
+        return;
+    }
+
+    for (tags, associated, mut mat) in &mut locations {
+        if graph_view.active {
+            let material = if tags.0.iter().any(|t| matches!(t, LocationTag::Charger)) {
+                assets.graph_view_charger_material.clone()
+            } else if tags
+                .0
+                .iter()
+                .any(|t| matches!(t, LocationTag::ParkingSpot))
+            {
+                assets.graph_view_parking_material.clone()
+            } else if tags
+                .0
+                .iter()
+                .any(|t| matches!(t, LocationTag::HoldingPoint))
+            {
+                assets.graph_view_holding_material.clone()
+            } else {
+                assets.graph_view_location_material.clone()
+            };
+            *mat = MeshMaterial3d(material);
+        } else {
+            *mat = MeshMaterial3d(graphs.display_style(associated).0);
+        }
+    }
+}

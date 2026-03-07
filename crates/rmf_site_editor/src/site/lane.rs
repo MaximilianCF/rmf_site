@@ -780,3 +780,39 @@ pub fn check_for_duplicated_dock_names(
         }
     }
 }
+
+/// When Graph View mode changes, recolor lanes by their type
+/// (robot=blue, human=orange) instead of nav graph color.
+pub fn update_lane_colors_for_graph_view(
+    graph_view: Res<NavGraphViewMode>,
+    all_lanes: Query<(&LaneSegments, &AssociatedGraphs<Entity>, &LaneType), With<LaneMarker>>,
+    graphs: GraphSelect,
+    lane_materials: Query<&MeshMaterial3d<ExtendedMaterial<StandardMaterial, LaneArrowMaterial>>>,
+    mut extended_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, LaneArrowMaterial>>>,
+) {
+    if !graph_view.is_changed() {
+        return;
+    }
+
+    for (segments, associated, lane_type) in &all_lanes {
+        let new_color = if graph_view.active {
+            // Use fixed colors by lane type
+            match lane_type {
+                LaneType::Robot => Color::srgb(0.31, 0.55, 0.86).to_linear(),
+                LaneType::Human => Color::srgb(0.90, 0.63, 0.20).to_linear(),
+            }
+        } else {
+            // Restore nav graph color with lane type tint
+            let (_, color, _) = graphs.display_style(associated);
+            apply_lane_type_tint(color, *lane_type).to_linear()
+        };
+
+        if let Ok(ext_mat) = lane_materials.get(segments.mid) {
+            if let Some(lane_mat) = extended_materials.get_mut(&ext_mat.0) {
+                lane_mat.extension.background_color = new_color;
+                lane_mat.extension.single_arrow_color = forward_arrow_color(new_color);
+                lane_mat.extension.double_arrow_color = backward_arrow_color(new_color);
+            }
+        }
+    }
+}

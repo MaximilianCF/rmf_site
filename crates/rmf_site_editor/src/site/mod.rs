@@ -449,11 +449,20 @@ impl Plugin for SitePlugin {
                 add_unused_fiducial_tracker,
                 update_fiducial_usage_tracker,
                 update_lane_type_visuals,
+                update_lane_colors_for_graph_view,
                 update_color_for_lanes.after(update_material_for_display_color),
                 update_visibility_for_lanes
                     .after(remove_association_for_deleted_graphs)
                     .after(add_lane_visuals),
                 update_visibility_for_locations.after(remove_association_for_deleted_graphs),
+                update_location_colors_for_graph_view,
+            )
+                .run_if(AppState::in_displaying_mode())
+                .in_set(SiteUpdateSet::BetweenTransformAndVisibility),
+        )
+        .add_systems(
+            PostUpdate,
+            (
                 update_changed_location,
                 update_location_for_moved_anchors,
                 update_location_for_changed_location_tags.before(SelectionServiceStages::Select),

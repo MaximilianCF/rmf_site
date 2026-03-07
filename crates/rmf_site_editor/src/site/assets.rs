@@ -154,6 +154,11 @@ pub struct SiteAssets {
     pub empty_billboard_material: Handle<StandardMaterial>,
     pub robot_path_rectangle_mesh: Handle<Mesh>,
     pub robot_path_circle_mesh: Handle<Mesh>,
+    // Graph view materials — color-coded by location type
+    pub graph_view_location_material: Handle<StandardMaterial>,
+    pub graph_view_charger_material: Handle<StandardMaterial>,
+    pub graph_view_parking_material: Handle<StandardMaterial>,
+    pub graph_view_holding_material: Handle<StandardMaterial>,
 }
 
 pub fn old_default_material(base_color: Color) -> StandardMaterial {
@@ -290,6 +295,16 @@ impl FromWorld for SiteAssets {
         let lockpad_material = materials.add(billboard_material(lockpad_texture));
         let empty_billboard_material = materials.add(billboard_material(empty_billboard_texture));
 
+        // Graph view materials — color-coded by location/lane type
+        let graph_view_location_material =
+            materials.add(old_default_material(Color::srgb(0.4, 0.78, 0.4)));
+        let graph_view_charger_material =
+            materials.add(old_default_material(Color::srgb(1.0, 0.86, 0.2)));
+        let graph_view_parking_material =
+            materials.add(old_default_material(Color::srgb(0.3, 0.7, 1.0)));
+        let graph_view_holding_material =
+            materials.add(old_default_material(Color::srgb(0.78, 0.47, 1.0)));
+
         let mut meshes = world.get_resource_mut::<Assets<Mesh>>().unwrap();
         let billboard_base_mesh =
             meshes.add(Rectangle::new(BILLBOARD_LENGTH, BILLBOARD_LENGTH / 3.0));
@@ -402,6 +417,10 @@ impl FromWorld for SiteAssets {
             empty_billboard_material,
             robot_path_rectangle_mesh,
             robot_path_circle_mesh,
+            graph_view_location_material,
+            graph_view_charger_material,
+            graph_view_parking_material,
+            graph_view_holding_material,
         }
     }
 }
