@@ -4,6 +4,7 @@ use rmf_site_camera::resources::ProjectionMode;
 
 use crate::{
     interaction::{SnapGridConfig, SnapToGrid},
+    site::NavGraphViewMode,
     AppState,
 };
 
@@ -34,6 +35,7 @@ fn render_status_bar(
     snap: Res<SnapToGrid>,
     projection_mode: Res<ProjectionMode>,
     grid_config: Res<SnapGridConfig>,
+    graph_view: Res<NavGraphViewMode>,
 ) {
     egui::TopBottomPanel::bottom("status_bar")
         .exact_height(22.0)
@@ -95,9 +97,19 @@ fn render_status_bar(
 
                 ui.separator();
 
+                // Graph view indicator
+                if graph_view.active {
+                    ui.label(
+                        egui::RichText::new("Graph View")
+                            .small()
+                            .color(egui::Color32::from_rgb(255, 180, 80)),
+                    );
+                    ui.separator();
+                }
+
                 ui.label(
                     egui::RichText::new(
-                        "[G] snap  [Shift+G] size  [Alt+G] grid  [F2] ortho  [F3] persp  [Del] delete",
+                        "[G] snap  [Shift+G] size  [Alt+G] grid  [F2] ortho  [F3] persp  [F4] graph  [Del] delete",
                     )
                     .small()
                     .weak(),

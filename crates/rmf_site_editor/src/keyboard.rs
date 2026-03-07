@@ -17,7 +17,7 @@
 
 use crate::{
     interaction::{SnapGridConfig, SnapToGrid},
-    site::{AlignSiteDrawings, Delete},
+    site::{AlignSiteDrawings, Delete, ToggleNavGraphView, ViewMenuItems},
     undo::{RedoRequest, UndoRequest},
     widgets::Notifications,
     CreateNewWorkspace, CurrentWorkspace, DebugMode, WorkspaceLoader, WorkspaceSaver,
@@ -26,6 +26,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 use crossflow::*;
 use rmf_site_camera::resources::ProjectionMode;
+use rmf_site_egui::MenuItem;
 use rmf_site_picking::Selection;
 
 /// plugin for managing input settings for rmf_site_editor
@@ -154,15 +155,18 @@ fn handle_keyboard_input(
     }
 }
 
-/// Separate system for debug mode and align, to stay within Bevy's 16-param limit.
+/// Separate system for debug mode, align, and graph view, to stay within Bevy's 16-param limit.
 fn handle_keyboard_extras(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut egui_context: EguiContexts,
     mut debug_mode: ResMut<DebugMode>,
     mut align_site: EventWriter<AlignSiteDrawings>,
+    mut toggle_graph_view: EventWriter<ToggleNavGraphView>,
     current_workspace: Res<CurrentWorkspace>,
     primary_windows: Query<Entity, With<PrimaryWindow>>,
     mut notifications: ResMut<Notifications>,
+    view_menu: Option<Res<ViewMenuItems>>,
+    mut menu_items: Query<&mut MenuItem>,
 ) {
     let Some(egui_context) = primary_windows
         .single()
@@ -179,6 +183,19 @@ fn handle_keyboard_extras(
         debug_mode.0 = !debug_mode.0;
         let state = if debug_mode.0 { "ON" } else { "OFF" };
         notifications.success(format!("Debug mode: {state}"));
+    }
+
+    if keyboard_input.just_pressed(KeyCode::F4) {
+        toggle_graph_view.write(ToggleNavGraphView);
+        // Sync the menu checkbox
+        if let Some(view_menu) = &view_menu {
+            if let Ok(mut item) = menu_items.get_mut(view_menu.graph_view) {
+                if let Some(value) = MenuItem::checkbox_value_mut(&mut item) {
+                    *value = !*value;
+                }
+            }
+        }
+        notifications.success("Graph View toggled");
     }
 
     if keyboard_input.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight]) {
