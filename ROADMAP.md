@@ -172,6 +172,17 @@ Upstream repo: https://github.com/open-rmf/rmf_site
 
 ### P2 -- Medium Priority / Editor Features
 
+**Multi-Select** (prerequisite for colinear alignment)
+- Ctrl+click to select multiple entities
+- Needed for alignment tools, bulk operations
+
+**Zones / ROI Sketching Tool** (upstream #183, from traffic_editor)
+- Draw zones/regions on the map for area-based constraints
+- New entity type: format, rendering, UI, serialization
+
+**Coordinate Systems / WGS84** (from traffic_editor)
+- Support for geo-referenced coordinate systems
+
 **Path Inspector Tool** (upstream #358)
 - Visual tool to inspect and debug navigation paths
 
@@ -180,9 +191,6 @@ Upstream repo: https://github.com/open-rmf/rmf_site
 
 **Sub-element Hover/Select** (upstream #380)
 - Hover and select individual sub-elements (e.g., door handles, wall segments)
-
-**Zone Sketching Tool** (upstream #183)
-- Draw zones/regions on the map for area-based constraints
 
 **Saving Views** (upstream #217)
 - Save camera positions and switch between named views
@@ -250,3 +258,7 @@ Upstream repo: https://github.com/open-rmf/rmf_site
 - **Menu system**: ECS-based Menu/MenuItem hierarchy with parent-child relationships
 - **Format**: `.site.json` (current), `.building.yaml` (legacy import)
 - **Desktop-only gates**: `#[cfg(not(target_arch = "wasm32"))]`
+- **Preferences**: `UserPreferences` resource → `~/.config/rmf_site_editor/preferences.json`
+- **Graph View**: `NavGraphViewMode` resource, `ToggleNavGraphView` event (F4), saves/restores `CategoryVisibility`
+- **Lane types**: `LaneType` enum (Robot/Human), `ChangePlugin<LaneType>`, `update_lane_type_visuals` system
+- **Color coding**: Graph View uses `graph_view_*_material` in `SiteAssets`, locations colored by `LocationTag`
